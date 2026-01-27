@@ -496,8 +496,10 @@ function init() {
         const tx = generateTransaction();
         state.transactions.push(tx);
         // Synchronize processing counters with actual transaction statuses
-        if (tx.status === 'approved' || tx.status === 'rejected') {
+        if (tx.status === 'approved') {
             state.processing.completed++;
+        } else if (tx.status === 'rejected') {
+            state.processing.failed++;
         } else if (tx.status === 'processing') {
             state.processing.processing++;
         } else if (tx.status === 'pending') {
