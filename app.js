@@ -505,9 +505,6 @@ function init() {
         }
     }
     
-    state.processing.queue = randomAmount(3, 8);
-    state.processing.processing = randomAmount(2, 5);
-    
     // Initialize UI
     initCharts();
     renderTransactions();
