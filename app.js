@@ -90,7 +90,7 @@ function initCharts() {
     gradient1.addColorStop(0, 'rgba(99, 102, 241, 0.5)');
     gradient1.addColorStop(1, 'rgba(99, 102, 241, 0)');
     
-    const gradient2 = ctx1.createLinearGradient(0, 0, 0, 280);
+    const gradient2 = ctx2.createLinearGradient(0, 0, 0, 280);
     gradient2.addColorStop(0, 'rgba(16, 185, 129, 0.5)');
     gradient2.addColorStop(1, 'rgba(16, 185, 129, 0)');
     
@@ -327,7 +327,19 @@ function updateProcessing() {
     const total = state.processing.queue + state.processing.processing + 
                   state.processing.completed + state.processing.failed;
     
-    if (total === 0) return;
+    // When total is 0, reset all UI elements to zero
+    if (total === 0) {
+        document.getElementById('queueCount').textContent = '0';
+        document.getElementById('processingCount').textContent = '0';
+        document.getElementById('completedCount').textContent = '0';
+        document.getElementById('failedCount').textContent = '0';
+        
+        document.getElementById('queueBar').style.width = '0%';
+        document.getElementById('processingBar').style.width = '0%';
+        document.getElementById('completedBar').style.width = '0%';
+        document.getElementById('failedBar').style.width = '0%';
+        return;
+    }
     
     document.getElementById('queueCount').textContent = state.processing.queue;
     document.getElementById('processingCount').textContent = state.processing.processing;
@@ -366,7 +378,7 @@ function simulateProcessing() {
         const tx = generateTransaction();
         state.transactions.unshift(tx);
         state.processing.queue++;
-        addStreamItem(tx, 'processing');
+        addStreamItem(tx, 'queued');
         addActivity(`טרנזקציה חדשה: ${tx.id}`, 'info');
     }
     
@@ -481,8 +493,16 @@ function updateDateTime() {
 function init() {
     // Generate initial data
     for (let i = 0; i < 15; i++) {
-        state.transactions.push(generateTransaction());
-        state.processing.completed++;
+        const tx = generateTransaction();
+        state.transactions.push(tx);
+        // Synchronize processing counters with actual transaction statuses
+        if (tx.status === 'approved' || tx.status === 'rejected') {
+            state.processing.completed++;
+        } else if (tx.status === 'processing') {
+            state.processing.processing++;
+        } else if (tx.status === 'pending') {
+            state.processing.queue++;
+        }
     }
     
     state.processing.queue = randomAmount(3, 8);
@@ -545,34 +565,9 @@ function init() {
     
     // Notification button handler
     document.querySelector('.notification-btn').addEventListener('click', () => {
-        // Crash the entire page
-        document.body.innerHTML = `
-            <div style="
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                height: 100vh;
-                background: #0a0a0a;
-                color: #ff3333;
-                font-family: monospace;
-                text-align: center;
-                padding: 20px;
-            ">
-                <div style="font-size: 80px; margin-bottom: 20px;">💥</div>
-                <h1 style="font-size: 48px; margin-bottom: 20px;">FATAL ERROR</h1>
-                <div style="background: #1a1a1a; padding: 30px; border-radius: 10px; border: 2px solid #ff3333; max-width: 600px;">
-                    <p style="color: #ff6666; font-size: 18px; margin-bottom: 15px;">Uncaught TypeError: Cannot read properties of undefined</p>
-                    <p style="color: #888; font-size: 14px; margin-bottom: 10px;">at NotificationService.fetchAll (notifications.js:142:23)</p>
-                    <p style="color: #888; font-size: 14px; margin-bottom: 10px;">at HTMLButtonElement.&lt;anonymous&gt; (app.js:847:15)</p>
-                    <p style="color: #888; font-size: 14px; margin-bottom: 20px;">at EventTarget.dispatchEvent (native)</p>
-                    <p style="color: #ff4444; font-size: 16px;">ERROR CODE: 0x80004005</p>
-                    <p style="color: #666; font-size: 12px; margin-top: 20px;">The application has encountered a critical error and must be terminated.</p>
-                </div>
-                <p style="color: #555; margin-top: 30px; font-size: 14px;">Press F5 to restart the application</p>
-            </div>
-        `;
-        throw new Error('CRITICAL_SYSTEM_FAILURE');
+        // Show notifications in a toast
+        showToast('יש לך 5 התראות חדשות', 'info');
+        addActivity('התראות נצפו על ידי המשתמש', 'info');
     });
     
     document.querySelectorAll('.nav-item').forEach(item => {
