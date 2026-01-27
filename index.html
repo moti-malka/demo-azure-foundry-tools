@@ -255,10 +255,27 @@
         </div>
     </div>
 
+    <!-- Notification Modal -->
+    <div class="modal-overlay" id="notificationModalOverlay">
+        <div class="modal" id="notificationModal">
+            <div class="modal-header">
+                <h3>התראות</h3>
+                <button class="close-notification-modal"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body" id="notificationModalBody">
+                <!-- Dynamic content -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary close-notification-modal">סגור</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast Container -->
     <div class="toast-container" id="toastContainer"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="notifications.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

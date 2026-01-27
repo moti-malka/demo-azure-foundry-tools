@@ -470,6 +470,108 @@ function editTransaction(id) {
     showToast(`עריכת טרנזקציה ${id}`, 'info');
 }
 
+// Show Notifications Modal
+function showNotificationsModal(notifications) {
+    const modal = document.getElementById('notificationModalOverlay');
+    const body = document.getElementById('notificationModalBody');
+    
+    // Defensive check
+    if (!modal || !body) {
+        showToast('שגיאה בהצגת התראות', 'error');
+        return;
+    }
+    
+    // Get notification type icons and colors
+    const getTypeInfo = (type) => {
+        const types = {
+            success: { icon: 'fa-check-circle', color: '#10b981' },
+            warning: { icon: 'fa-exclamation-triangle', color: '#f59e0b' },
+            error: { icon: 'fa-times-circle', color: '#ef4444' },
+            info: { icon: 'fa-info-circle', color: '#6366f1' }
+        };
+        return types[type] || types.info;
+    };
+    
+    // Format timestamp
+    const formatNotificationTime = (timestamp) => {
+        if (!timestamp) return '';
+        
+        const now = new Date();
+        const notifDate = new Date(timestamp);
+        const diffMs = now - notifDate;
+        const diffMins = Math.floor(diffMs / 60000);
+        
+        if (diffMins < 1) return 'עכשיו';
+        if (diffMins < 60) return `לפני ${diffMins} דקות`;
+        const diffHours = Math.floor(diffMins / 60);
+        if (diffHours < 24) return `לפני ${diffHours} שעות`;
+        const diffDays = Math.floor(diffHours / 24);
+        return `לפני ${diffDays} ימים`;
+    };
+    
+    // Build notifications HTML
+    if (notifications.length === 0) {
+        body.innerHTML = `
+            <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                <i class="fas fa-bell-slash" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
+                <p>אין התראות חדשות</p>
+            </div>
+        `;
+    } else {
+        body.innerHTML = `
+            <div style="display: flex; flex-direction: column; gap: 0; max-height: 400px; overflow-y: auto;">
+                ${notifications.map(notification => {
+                    // Defensive checks for notification properties
+                    const title = (notification && notification.title) || 'התראה';
+                    const message = (notification && notification.message) || '';
+                    const type = (notification && notification.type) || 'info';
+                    const timestamp = (notification && notification.timestamp) || new Date();
+                    const read = (notification && notification.read) || false;
+                    
+                    const typeInfo = getTypeInfo(type);
+                    
+                    return `
+                        <div style="
+                            display: flex;
+                            padding: 16px;
+                            border-bottom: 1px solid var(--border-color);
+                            background: ${read ? 'transparent' : 'rgba(99, 102, 241, 0.05)'};
+                            gap: 12px;
+                        ">
+                            <div style="
+                                width: 40px;
+                                height: 40px;
+                                border-radius: 50%;
+                                background: ${typeInfo.color}20;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                flex-shrink: 0;
+                            ">
+                                <i class="fas ${typeInfo.icon}" style="color: ${typeInfo.color}; font-size: 18px;"></i>
+                            </div>
+                            <div style="flex: 1; min-width: 0;">
+                                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 4px;">
+                                    <span style="font-weight: 600; color: var(--text-primary);">${title}</span>
+                                    ${!read ? '<span style="width: 8px; height: 8px; background: #6366f1; border-radius: 50%; flex-shrink: 0;"></span>' : ''}
+                                </div>
+                                <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 8px; line-height: 1.4;">
+                                    ${message}
+                                </p>
+                                <span style="color: var(--text-muted); font-size: 0.75rem;">
+                                    ${formatNotificationTime(timestamp)}
+                                </span>
+                            </div>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        `;
+    }
+    
+    modal.classList.add('active');
+}
+
 // Update Date/Time
 function updateDateTime() {
     const now = new Date();
@@ -489,7 +591,11 @@ function init() {
     state.processing.processing = randomAmount(2, 5);
     
     // Initialize UI
-    initCharts();
+    try {
+        initCharts();
+    } catch (error) {
+        console.warn('Charts could not be initialized:', error.message);
+    }
     renderTransactions();
     updateStats();
     updateProcessing();
@@ -504,14 +610,16 @@ function init() {
     setInterval(simulateProcessing, 2000);
     setInterval(updateDateTime, 1000);
     setInterval(() => {
-        // Update chart data randomly
-        transactionsChart.data.datasets[0].data = transactionsChart.data.datasets[0].data.map(
-            v => v + randomAmount(-500, 500)
-        );
-        transactionsChart.data.datasets[1].data = transactionsChart.data.datasets[1].data.map(
-            v => v + randomAmount(-300, 300)
-        );
-        transactionsChart.update('none');
+        // Update chart data randomly (only if charts are initialized)
+        if (transactionsChart && transactionsChart.data && transactionsChart.data.datasets) {
+            transactionsChart.data.datasets[0].data = transactionsChart.data.datasets[0].data.map(
+                v => v + randomAmount(-500, 500)
+            );
+            transactionsChart.data.datasets[1].data = transactionsChart.data.datasets[1].data.map(
+                v => v + randomAmount(-300, 300)
+            );
+            transactionsChart.update('none');
+        }
     }, 5000);
     
     // Event Listeners
@@ -522,6 +630,19 @@ function init() {
     });
     
     document.getElementById('modalOverlay').addEventListener('click', (e) => {
+        if (e.target === e.currentTarget) {
+            e.currentTarget.classList.remove('active');
+        }
+    });
+    
+    // Notification modal event listeners
+    document.querySelectorAll('.close-notification-modal').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.getElementById('notificationModalOverlay').classList.remove('active');
+        });
+    });
+    
+    document.getElementById('notificationModalOverlay').addEventListener('click', (e) => {
         if (e.target === e.currentTarget) {
             e.currentTarget.classList.remove('active');
         }
@@ -544,35 +665,30 @@ function init() {
     });
     
     // Notification button handler
-    document.querySelector('.notification-btn').addEventListener('click', () => {
-        // Crash the entire page
-        document.body.innerHTML = `
-            <div style="
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                height: 100vh;
-                background: #0a0a0a;
-                color: #ff3333;
-                font-family: monospace;
-                text-align: center;
-                padding: 20px;
-            ">
-                <div style="font-size: 80px; margin-bottom: 20px;">💥</div>
-                <h1 style="font-size: 48px; margin-bottom: 20px;">FATAL ERROR</h1>
-                <div style="background: #1a1a1a; padding: 30px; border-radius: 10px; border: 2px solid #ff3333; max-width: 600px;">
-                    <p style="color: #ff6666; font-size: 18px; margin-bottom: 15px;">Uncaught TypeError: Cannot read properties of undefined</p>
-                    <p style="color: #888; font-size: 14px; margin-bottom: 10px;">at NotificationService.fetchAll (notifications.js:142:23)</p>
-                    <p style="color: #888; font-size: 14px; margin-bottom: 10px;">at HTMLButtonElement.&lt;anonymous&gt; (app.js:847:15)</p>
-                    <p style="color: #888; font-size: 14px; margin-bottom: 20px;">at EventTarget.dispatchEvent (native)</p>
-                    <p style="color: #ff4444; font-size: 16px;">ERROR CODE: 0x80004005</p>
-                    <p style="color: #666; font-size: 12px; margin-top: 20px;">The application has encountered a critical error and must be terminated.</p>
-                </div>
-                <p style="color: #555; margin-top: 30px; font-size: 14px;">Press F5 to restart the application</p>
-            </div>
-        `;
-        throw new Error('CRITICAL_SYSTEM_FAILURE');
+    document.querySelector('.notification-btn').addEventListener('click', async () => {
+        try {
+            // Check if notificationService exists
+            if (typeof notificationService === 'undefined') {
+                showToast('שירות ההתראות אינו זמין כרגע', 'warning');
+                return;
+            }
+
+            // Fetch notifications with error handling
+            const notifications = await notificationService.fetchAll();
+            
+            // Defensive check for notifications
+            if (!notifications || !Array.isArray(notifications)) {
+                showToast('לא נמצאו התראות', 'info');
+                return;
+            }
+
+            // Display notifications in modal
+            showNotificationsModal(notifications);
+        } catch (error) {
+            // Handle errors gracefully without crashing
+            console.error('Error loading notifications:', error);
+            showToast('שגיאה בטעינת התראות. נסה שוב מאוחר יותר', 'error');
+        }
     });
     
     document.querySelectorAll('.nav-item').forEach(item => {
