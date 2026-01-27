@@ -522,11 +522,11 @@ function showNotificationsModal(notifications) {
             <div style="display: flex; flex-direction: column; gap: 0; max-height: 400px; overflow-y: auto;">
                 ${notifications.map(notification => {
                     // Defensive checks for notification properties
-                    const title = notification && notification.title || 'התראה';
-                    const message = notification && notification.message || '';
-                    const type = notification && notification.type || 'info';
-                    const timestamp = notification && notification.timestamp || new Date();
-                    const read = notification && notification.read || false;
+                    const title = (notification && notification.title) || 'התראה';
+                    const message = (notification && notification.message) || '';
+                    const type = (notification && notification.type) || 'info';
+                    const timestamp = (notification && notification.timestamp) || new Date();
+                    const read = (notification && notification.read) || false;
                     
                     const typeInfo = getTypeInfo(type);
                     
