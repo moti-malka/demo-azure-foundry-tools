@@ -591,7 +591,11 @@ function init() {
     state.processing.processing = randomAmount(2, 5);
     
     // Initialize UI
-    initCharts();
+    try {
+        initCharts();
+    } catch (error) {
+        console.warn('Charts could not be initialized:', error.message);
+    }
     renderTransactions();
     updateStats();
     updateProcessing();
