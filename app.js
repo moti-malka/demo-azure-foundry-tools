@@ -543,36 +543,57 @@ function init() {
         document.querySelector('.sidebar').classList.toggle('open');
     });
     
-    // Notification button handler
-    document.querySelector('.notification-btn').addEventListener('click', () => {
-        // Crash the entire page
-        document.body.innerHTML = `
-            <div style="
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                height: 100vh;
-                background: #0a0a0a;
-                color: #ff3333;
-                font-family: monospace;
-                text-align: center;
-                padding: 20px;
-            ">
-                <div style="font-size: 80px; margin-bottom: 20px;">💥</div>
-                <h1 style="font-size: 48px; margin-bottom: 20px;">FATAL ERROR</h1>
-                <div style="background: #1a1a1a; padding: 30px; border-radius: 10px; border: 2px solid #ff3333; max-width: 600px;">
-                    <p style="color: #ff6666; font-size: 18px; margin-bottom: 15px;">Uncaught TypeError: Cannot read properties of undefined</p>
-                    <p style="color: #888; font-size: 14px; margin-bottom: 10px;">at NotificationService.fetchAll (notifications.js:142:23)</p>
-                    <p style="color: #888; font-size: 14px; margin-bottom: 10px;">at HTMLButtonElement.&lt;anonymous&gt; (app.js:847:15)</p>
-                    <p style="color: #888; font-size: 14px; margin-bottom: 20px;">at EventTarget.dispatchEvent (native)</p>
-                    <p style="color: #ff4444; font-size: 16px;">ERROR CODE: 0x80004005</p>
-                    <p style="color: #666; font-size: 12px; margin-top: 20px;">The application has encountered a critical error and must be terminated.</p>
+    // Notification button handler — REPLACED WITH SAFE IMPLEMENTATION
+    document.querySelector('.notification-btn').addEventListener('click', async (e) => {
+        e.preventDefault();
+
+        const btn = e.currentTarget;
+        btn.classList.toggle('open');
+
+        // Ensure dropdown container exists
+        let dropdown = document.getElementById('notificationDropdown');
+        if (!dropdown) {
+            dropdown = document.createElement('div');
+            dropdown.id = 'notificationDropdown';
+            dropdown.className = 'notification-dropdown';
+            dropdown.innerHTML = '<div class="notification-placeholder">טוען התראות...</div>';
+            // Append near body; styles should be added in styles.css
+            document.body.appendChild(dropdown);
+        }
+
+        // Helper to render items
+        function renderNotifications(items) {
+            if (!items || items.length === 0) {
+                dropdown.innerHTML = '<div class="notification-empty">אין התראות חדשות</div>';
+                return;
+            }
+            dropdown.innerHTML = items.map(it => `
+                <div class="notification-item">
+                    <div class="notification-title">${it.title || it.text || 'התראה'}</div>
+                    <div class="notification-time">${it.time || ''}</div>
                 </div>
-                <p style="color: #555; margin-top: 30px; font-size: 14px;">Press F5 to restart the application</p>
-            </div>
-        `;
-        throw new Error('CRITICAL_SYSTEM_FAILURE');
+            `).join('');
+        }
+
+        try {
+            // Try to use NotificationService if available
+            if (typeof NotificationService !== 'undefined' && typeof NotificationService.fetchAll === 'function') {
+                const items = await NotificationService.fetchAll(); // caller must return array
+                renderNotifications(items);
+            } else {
+                // Fallback: use recent activities or transactions as temporary notifications
+                const fallback = state.transactions.slice(0,5).map(tx => ({
+                    title: `טרנזקציה ${tx.id}`,
+                    text: tx.description || '',
+                    time: formatTime(tx.date)
+                }));
+                renderNotifications(fallback);
+            }
+        } catch (err) {
+            console.error('Failed to load notifications:', err);
+            showToast('שגיאה בטעינת התראות', 'error');
+            dropdown.innerHTML = '<div class="notification-error">שגיאה בטעינת התראות</div>';
+        }
     });
     
     document.querySelectorAll('.nav-item').forEach(item => {
