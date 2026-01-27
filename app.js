@@ -589,7 +589,7 @@ function init() {
                                 <div class="notification-item">
                                     <i class="fas fa-exclamation-triangle"></i>
                                     <div>
-                                        <div class="notification-text">דרושה אישור מנהל</div>
+                                        <div class="notification-text">דרוש אישור מנהל</div>
                                         <div class="notification-time">לפני 3 שעות</div>
                                     </div>
                                 </div>
@@ -622,7 +622,7 @@ function init() {
                         <div style="display: flex; gap: 12px; padding: 12px; background: var(--bg-darker); border-radius: 8px;">
                             <i class="fas fa-exclamation-triangle" style="color: var(--warning-color); margin-top: 4px;"></i>
                             <div>
-                                <div style="margin-bottom: 4px;">דרושה אישור מנהל</div>
+                                <div style="margin-bottom: 4px;">דרוש אישור מנהל</div>
                                 <div style="font-size: 0.8rem; color: var(--text-muted);">לפני 3 שעות</div>
                             </div>
                         </div>

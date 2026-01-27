@@ -273,7 +273,7 @@ body {
 .notifications-panel {
     position: absolute;
     top: calc(var(--header-height) + 8px);
-    left: 120px;
+    right: 120px;
     width: 360px;
     background: var(--bg-card);
     border: 1px solid var(--border-color);
