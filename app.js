@@ -489,7 +489,11 @@ function init() {
     state.processing.processing = randomAmount(2, 5);
     
     // Initialize UI
-    initCharts();
+    try {
+        initCharts();
+    } catch (error) {
+        console.error('Failed to initialize charts:', error);
+    }
     renderTransactions();
     updateStats();
     updateProcessing();
@@ -545,34 +549,93 @@ function init() {
     
     // Notification button handler
     document.querySelector('.notification-btn').addEventListener('click', () => {
-        // Crash the entire page
-        document.body.innerHTML = `
-            <div style="
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                height: 100vh;
-                background: #0a0a0a;
-                color: #ff3333;
-                font-family: monospace;
-                text-align: center;
-                padding: 20px;
-            ">
-                <div style="font-size: 80px; margin-bottom: 20px;">💥</div>
-                <h1 style="font-size: 48px; margin-bottom: 20px;">FATAL ERROR</h1>
-                <div style="background: #1a1a1a; padding: 30px; border-radius: 10px; border: 2px solid #ff3333; max-width: 600px;">
-                    <p style="color: #ff6666; font-size: 18px; margin-bottom: 15px;">Uncaught TypeError: Cannot read properties of undefined</p>
-                    <p style="color: #888; font-size: 14px; margin-bottom: 10px;">at NotificationService.fetchAll (notifications.js:142:23)</p>
-                    <p style="color: #888; font-size: 14px; margin-bottom: 10px;">at HTMLButtonElement.&lt;anonymous&gt; (app.js:847:15)</p>
-                    <p style="color: #888; font-size: 14px; margin-bottom: 20px;">at EventTarget.dispatchEvent (native)</p>
-                    <p style="color: #ff4444; font-size: 16px;">ERROR CODE: 0x80004005</p>
-                    <p style="color: #666; font-size: 12px; margin-top: 20px;">The application has encountered a critical error and must be terminated.</p>
-                </div>
-                <p style="color: #555; margin-top: 30px; font-size: 14px;">Press F5 to restart the application</p>
-            </div>
-        `;
-        throw new Error('CRITICAL_SYSTEM_FAILURE');
+        try {
+            // Check if notifications panel exists
+            const panel = document.querySelector('#notificationsPanel') || 
+                         document.querySelector('.notifications-panel');
+            
+            if (panel) {
+                // Toggle the notifications panel
+                panel.classList.toggle('active');
+                
+                // Try to load notifications if NotificationService exists
+                if (typeof NotificationService !== 'undefined') {
+                    try {
+                        NotificationService.fetchAll();
+                    } catch (error) {
+                        console.error('Failed to fetch notifications:', error);
+                        showToast('לא ניתן לטעון התראות', 'error');
+                    }
+                } else {
+                    // Display sample notifications in the panel
+                    if (panel.classList.contains('active')) {
+                        const content = panel.querySelector('.notifications-content');
+                        if (content && content.children.length === 0) {
+                            content.innerHTML = `
+                                <div class="notification-item unread">
+                                    <i class="fas fa-check-circle"></i>
+                                    <div>
+                                        <div class="notification-text">טרנזקציה חדשה אושרה</div>
+                                        <div class="notification-time">לפני 5 דקות</div>
+                                    </div>
+                                </div>
+                                <div class="notification-item">
+                                    <i class="fas fa-info-circle"></i>
+                                    <div>
+                                        <div class="notification-text">עדכון מערכת זמין</div>
+                                        <div class="notification-time">לפני שעה</div>
+                                    </div>
+                                </div>
+                                <div class="notification-item">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    <div>
+                                        <div class="notification-text">דרושה אישור מנהל</div>
+                                        <div class="notification-time">לפני 3 שעות</div>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    }
+                }
+            } else {
+                // Fallback: use existing modal to show notifications
+                const modal = document.getElementById('modalOverlay');
+                const body = document.getElementById('modalBody');
+                
+                body.innerHTML = `
+                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                        <h4 style="margin-bottom: 8px;">התראות אחרונות</h4>
+                        <div style="display: flex; gap: 12px; padding: 12px; background: var(--bg-darker); border-radius: 8px;">
+                            <i class="fas fa-check-circle" style="color: var(--success-color); margin-top: 4px;"></i>
+                            <div>
+                                <div style="margin-bottom: 4px;">טרנזקציה חדשה אושרה</div>
+                                <div style="font-size: 0.8rem; color: var(--text-muted);">לפני 5 דקות</div>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 12px; padding: 12px; background: var(--bg-darker); border-radius: 8px;">
+                            <i class="fas fa-info-circle" style="color: var(--info-color); margin-top: 4px;"></i>
+                            <div>
+                                <div style="margin-bottom: 4px;">עדכון מערכת זמין</div>
+                                <div style="font-size: 0.8rem; color: var(--text-muted);">לפני שעה</div>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 12px; padding: 12px; background: var(--bg-darker); border-radius: 8px;">
+                            <i class="fas fa-exclamation-triangle" style="color: var(--warning-color); margin-top: 4px;"></i>
+                            <div>
+                                <div style="margin-bottom: 4px;">דרושה אישור מנהל</div>
+                                <div style="font-size: 0.8rem; color: var(--text-muted);">לפני 3 שעות</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                modal.classList.add('active');
+            }
+        } catch (error) {
+            // Handle any errors gracefully
+            console.error('Error handling notification click:', error);
+            showToast('לא ניתן לטעון התראות', 'error');
+        }
     });
     
     document.querySelectorAll('.nav-item').forEach(item => {
@@ -582,6 +645,18 @@ function init() {
             item.classList.add('active');
             showToast(`ניווט ל${item.querySelector('span').textContent}`, 'info');
         });
+    });
+    
+    // Close notifications panel when clicking outside
+    document.addEventListener('click', (e) => {
+        const panel = document.querySelector('.notifications-panel');
+        const notificationBtn = document.querySelector('.notification-btn');
+        
+        if (panel && panel.classList.contains('active')) {
+            if (!panel.contains(e.target) && !notificationBtn.contains(e.target)) {
+                panel.classList.remove('active');
+            }
+        }
     });
     
     showToast('מערכת ניהול טרנזקציות נטענה בהצלחה', 'success');
