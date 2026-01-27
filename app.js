@@ -544,35 +544,66 @@ function init() {
     });
     
     // Notification button handler
-    document.querySelector('.notification-btn').addEventListener('click', () => {
-        // Crash the entire page
-        document.body.innerHTML = `
-            <div style="
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                height: 100vh;
-                background: #0a0a0a;
-                color: #ff3333;
-                font-family: monospace;
-                text-align: center;
-                padding: 20px;
-            ">
-                <div style="font-size: 80px; margin-bottom: 20px;">💥</div>
-                <h1 style="font-size: 48px; margin-bottom: 20px;">FATAL ERROR</h1>
-                <div style="background: #1a1a1a; padding: 30px; border-radius: 10px; border: 2px solid #ff3333; max-width: 600px;">
-                    <p style="color: #ff6666; font-size: 18px; margin-bottom: 15px;">Uncaught TypeError: Cannot read properties of undefined</p>
-                    <p style="color: #888; font-size: 14px; margin-bottom: 10px;">at NotificationService.fetchAll (notifications.js:142:23)</p>
-                    <p style="color: #888; font-size: 14px; margin-bottom: 10px;">at HTMLButtonElement.&lt;anonymous&gt; (app.js:847:15)</p>
-                    <p style="color: #888; font-size: 14px; margin-bottom: 20px;">at EventTarget.dispatchEvent (native)</p>
-                    <p style="color: #ff4444; font-size: 16px;">ERROR CODE: 0x80004005</p>
-                    <p style="color: #666; font-size: 12px; margin-top: 20px;">The application has encountered a critical error and must be terminated.</p>
-                </div>
-                <p style="color: #555; margin-top: 30px; font-size: 14px;">Press F5 to restart the application</p>
+    document.querySelector('.notification-btn').addEventListener('click', (e) => {
+        // Toggle a lightweight notification dropdown panel instead of crashing
+        const headerRight = document.querySelector('.header-right');
+        if (!headerRight) return;
+
+        let panel = document.querySelector('.notification-panel');
+        if (panel) {
+            // If panel exists, toggle visibility
+            panel.classList.toggle('open');
+            return;
+        }
+
+        panel = document.createElement('div');
+        panel.className = 'notification-panel';
+        panel.innerHTML = `
+            <div class="notification-header">
+                <strong>התראות</strong>
+                <button class="clear-notifications">נקה</button>
             </div>
+            <div class="notification-list"></div>
         `;
-        throw new Error('CRITICAL_SYSTEM_FAILURE');
+
+        headerRight.appendChild(panel);
+
+        const list = panel.querySelector('.notification-list');
+
+        // Populate with recent activities (non-blocking, safe)
+        for (let i = 0; i < 5; i++) {
+            const msg = randomElement(activityMessages);
+            const item = document.createElement('div');
+            item.className = 'notification-item';
+            item.innerHTML = `
+                <div class="notification-text">${msg}</div>
+                <div class="notification-time">${formatTime(new Date())}</div>
+            `;
+            list.appendChild(item);
+        }
+
+        // Update badge count
+        const badge = document.querySelector('.notification-badge');
+        if (badge) badge.textContent = list.children.length;
+
+        // Clear notifications handler
+        panel.querySelector('.clear-notifications').addEventListener('click', () => {
+            list.innerHTML = '';
+            if (badge) badge.textContent = '0';
+        });
+
+        // Close panel when clicking outside
+        const onDocClick = (ev) => {
+            const btn = document.querySelector('.notification-btn');
+            if (!panel.contains(ev.target) && btn && !btn.contains(ev.target)) {
+                panel.classList.remove('open');
+                document.removeEventListener('click', onDocClick);
+            }
+        };
+        setTimeout(() => document.addEventListener('click', onDocClick), 0);
+
+        // Open panel
+        setTimeout(() => panel.classList.add('open'), 10);
     });
     
     document.querySelectorAll('.nav-item').forEach(item => {
