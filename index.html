@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>מערכת ניהול טרנזקציות | TransactPro</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">
+                <i class="fas fa-exchange-alt"></i>
+                <span>TransactPro</span>
+            </div>
+            <nav class="nav-menu">
+                <a href="#" class="nav-item active" data-page="dashboard">
+                    <i class="fas fa-chart-line"></i>
+                    <span>לוח בקרה</span>
+                </a>
+                <a href="#" class="nav-item" data-page="transactions">
+                    <i class="fas fa-receipt"></i>
+                    <span>טרנזקציות</span>
+                </a>
+                <a href="#" class="nav-item" data-page="analytics">
+                    <i class="fas fa-chart-pie"></i>
+                    <span>אנליטיקס</span>
+                </a>
+                <a href="#" class="nav-item" data-page="accounts">
+                    <i class="fas fa-wallet"></i>
+                    <span>חשבונות</span>
+                </a>
+                <a href="#" class="nav-item" data-page="settings">
+                    <i class="fas fa-cog"></i>
+                    <span>הגדרות</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="User">
+                    <div class="user-details">
+                        <span class="user-name">אלון כהן</span>
+                        <span class="user-role">מנהל מערכת</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="header">
+                <div class="header-left">
+                    <button class="menu-toggle">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" placeholder="חיפוש טרנזקציות, חשבונות...">
+                    </div>
+                </div>
+                <div class="header-right">
+                    <button class="header-btn" id="refreshBtn">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                    <button class="header-btn notification-btn">
+                        <i class="fas fa-bell"></i>
+                        <span class="notification-badge">5</span>
+                    </button>
+                    <div class="date-time">
+                        <span id="currentDate"></span>
+                        <span id="currentTime"></span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Dashboard Content -->
+            <div class="content" id="dashboard">
+                <!-- Stats Cards -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon blue">
+                            <i class="fas fa-arrow-up"></i>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-label">הכנסות היום</span>
+                            <span class="stat-value" id="todayIncome">₪0</span>
+                            <span class="stat-change positive">+12.5%</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon red">
+                            <i class="fas fa-arrow-down"></i>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-label">הוצאות היום</span>
+                            <span class="stat-value" id="todayExpenses">₪0</span>
+                            <span class="stat-change negative">-3.2%</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon green">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-label">טרנזקציות מאושרות</span>
+                            <span class="stat-value" id="approvedCount">0</span>
+                            <span class="stat-change positive">+8.1%</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon orange">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-label">ממתינות לאישור</span>
+                            <span class="stat-value" id="pendingCount">0</span>
+                            <span class="stat-change neutral">0%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Row -->
+                <div class="charts-row">
+                    <div class="chart-card large">
+                        <div class="card-header">
+                            <h3>מגמת טרנזקציות - 7 ימים אחרונים</h3>
+                            <div class="card-actions">
+                                <button class="action-btn active">יומי</button>
+                                <button class="action-btn">שבועי</button>
+                                <button class="action-btn">חודשי</button>
+                            </div>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="transactionsChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-card">
+                        <div class="card-header">
+                            <h3>התפלגות לפי קטגוריה</h3>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="categoryChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tables Row -->
+                <div class="tables-row">
+                    <div class="table-card">
+                        <div class="card-header">
+                            <h3>טרנזקציות אחרונות</h3>
+                            <button class="view-all-btn">צפה בהכל <i class="fas fa-arrow-left"></i></button>
+                        </div>
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>מזהה</th>
+                                        <th>תאריך</th>
+                                        <th>סוג</th>
+                                        <th>סכום</th>
+                                        <th>סטטוס</th>
+                                        <th>פעולות</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recentTransactions">
+                                    <!-- Dynamic content -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="activity-card">
+                        <div class="card-header">
+                            <h3>פעילות מערכת</h3>
+                        </div>
+                        <div class="activity-feed" id="activityFeed">
+                            <!-- Dynamic content -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Real-time Processing -->
+                <div class="processing-section">
+                    <div class="card-header">
+                        <h3>עיבוד טרנזקציות בזמן אמת</h3>
+                        <div class="live-indicator">
+                            <span class="pulse"></span>
+                            LIVE
+                        </div>
+                    </div>
+                    <div class="processing-grid">
+                        <div class="process-item">
+                            <div class="process-header">
+                                <span>בתור</span>
+                                <span class="process-count" id="queueCount">0</span>
+                            </div>
+                            <div class="process-bar">
+                                <div class="process-fill queue" id="queueBar"></div>
+                            </div>
+                        </div>
+                        <div class="process-item">
+                            <div class="process-header">
+                                <span>בעיבוד</span>
+                                <span class="process-count" id="processingCount">0</span>
+                            </div>
+                            <div class="process-bar">
+                                <div class="process-fill processing" id="processingBar"></div>
+                            </div>
+                        </div>
+                        <div class="process-item">
+                            <div class="process-header">
+                                <span>הושלמו</span>
+                                <span class="process-count" id="completedCount">0</span>
+                            </div>
+                            <div class="process-bar">
+                                <div class="process-fill completed" id="completedBar"></div>
+                            </div>
+                        </div>
+                        <div class="process-item">
+                            <div class="process-header">
+                                <span>נכשלו</span>
+                                <span class="process-count" id="failedCount">0</span>
+                            </div>
+                            <div class="process-bar">
+                                <div class="process-fill failed" id="failedBar"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="transaction-stream" id="transactionStream">
+                        <!-- Live transaction stream -->
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal" id="transactionModal">
+            <div class="modal-header">
+                <h3>פרטי טרנזקציה</h3>
+                <button class="close-modal"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Dynamic content -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary close-modal">סגור</button>
+                <button class="btn btn-primary">אשר טרנזקציה</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
