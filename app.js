@@ -585,7 +585,11 @@ function init() {
     state.processing.processing = randomAmount(2, 5);
     
     // Initialize UI
-    initCharts();
+    try {
+        initCharts();
+    } catch (error) {
+        console.warn('Charts initialization failed:', error.message);
+    }
     renderTransactions();
     updateStats();
     updateProcessing();
@@ -599,16 +603,18 @@ function init() {
     // Start intervals
     setInterval(simulateProcessing, 2000);
     setInterval(updateDateTime, 1000);
-    setInterval(() => {
-        // Update chart data randomly
-        transactionsChart.data.datasets[0].data = transactionsChart.data.datasets[0].data.map(
-            v => v + randomAmount(-500, 500)
-        );
-        transactionsChart.data.datasets[1].data = transactionsChart.data.datasets[1].data.map(
-            v => v + randomAmount(-300, 300)
-        );
-        transactionsChart.update('none');
-    }, 5000);
+    if (transactionsChart) {
+        setInterval(() => {
+            // Update chart data randomly
+            transactionsChart.data.datasets[0].data = transactionsChart.data.datasets[0].data.map(
+                v => v + randomAmount(-500, 500)
+            );
+            transactionsChart.data.datasets[1].data = transactionsChart.data.datasets[1].data.map(
+                v => v + randomAmount(-300, 300)
+            );
+            transactionsChart.update('none');
+        }, 5000);
+    }
     
     // Event Listeners
     document.querySelectorAll('.close-modal').forEach(btn => {
