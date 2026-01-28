@@ -796,7 +796,6 @@ body {
     background: var(--info-color);
 }
 
-
 .stream-item .status-dot.completed {
     background: var(--success-color);
 }
