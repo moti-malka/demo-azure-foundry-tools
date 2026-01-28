@@ -470,6 +470,143 @@ function editTransaction(id) {
     showToast(`עריכת טרנזקציה ${id}`, 'info');
 }
 
+// Show Notifications Modal
+function showNotificationsModal(notifications) {
+    const modal = document.getElementById('modalOverlay');
+    const body = document.getElementById('modalBody');
+    const header = modal.querySelector('.modal-header h3');
+    const footer = modal.querySelector('.modal-footer');
+    
+    // Update modal title for notifications
+    if (header) {
+        header.textContent = 'התראות';
+    }
+    
+    // Hide footer for notifications modal
+    if (footer) {
+        footer.style.display = 'none';
+    }
+    
+    const formatRelativeTime = (date) => {
+        const minutes = Math.floor((new Date() - date) / 60000);
+        if (minutes < 1) return 'עכשיו';
+        if (minutes === 1) return 'לפני דקה אחת';
+        if (minutes < 60) return `לפני ${minutes} דקות`;
+        const hours = Math.floor(minutes / 60);
+        if (hours === 1) return 'לפני שעה אחת';
+        if (hours < 24) return `לפני ${hours} שעות`;
+        const days = Math.floor(hours / 24);
+        if (days === 1) return 'לפני יום אחד';
+        return `לפני ${days} ימים`;
+    };
+    
+    const getNotificationIcon = (type) => {
+        const icons = {
+            success: 'fa-check-circle',
+            error: 'fa-times-circle',
+            warning: 'fa-exclamation-triangle',
+            info: 'fa-info-circle'
+        };
+        return icons[type] || 'fa-bell';
+    };
+    
+    const getNotificationColor = (type) => {
+        const colors = {
+            success: '#10b981',
+            error: '#ef4444',
+            warning: '#f59e0b',
+            info: '#6366f1'
+        };
+        return colors[type] || '#6366f1';
+    };
+    
+    const getNotificationBgColor = (type) => {
+        const colors = {
+            success: 'rgba(16, 185, 129, 0.2)',
+            error: 'rgba(239, 68, 68, 0.2)',
+            warning: 'rgba(245, 158, 11, 0.2)',
+            info: 'rgba(99, 102, 241, 0.2)'
+        };
+        return colors[type] || 'rgba(99, 102, 241, 0.2)';
+    };
+    
+    // Helper to safely escape HTML
+    const escapeHtml = (text) => {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    };
+    
+    if (notifications.length === 0) {
+        body.innerHTML = `
+            <div style="text-align: center; padding: 40px;">
+                <i class="fas fa-bell-slash" style="font-size: 48px; color: var(--text-secondary); margin-bottom: 16px;"></i>
+                <p style="color: var(--text-secondary); font-size: 16px;">אין התראות חדשות</p>
+            </div>
+        `;
+    } else {
+        body.innerHTML = `
+            <div style="display: flex; flex-direction: column; gap: 12px; max-height: 400px; overflow-y: auto; overflow-x: hidden;">
+                ${notifications.map(n => `
+                    <div class="notification-item ${n.read ? 'read' : 'unread'}" data-notification-id="${escapeHtml(n.id)}" style="
+                        padding: 16px;
+                        background: ${n.read ? 'var(--bg-darker)' : 'rgba(99, 102, 241, 0.1)'};
+                        border-radius: 8px;
+                        border-left: 3px solid ${getNotificationColor(n.type)};
+                        cursor: pointer;
+                        transition: background 0.2s;
+                    ">
+                        <div style="display: flex; align-items: start; gap: 12px;">
+                            <div style="
+                                width: 40px;
+                                height: 40px;
+                                border-radius: 50%;
+                                background: ${getNotificationBgColor(n.type)};
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                flex-shrink: 0;
+                            ">
+                                <i class="fas ${getNotificationIcon(n.type)}" style="color: ${getNotificationColor(n.type)};"></i>
+                            </div>
+                            <div style="flex: 1;">
+                                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 4px;">
+                                    <h4 style="margin: 0; color: var(--text-primary); font-size: 14px; font-weight: 600;">
+                                        ${escapeHtml(n.title)}
+                                    </h4>
+                                    ${!n.read ? '<span style="width: 8px; height: 8px; background: #6366f1; border-radius: 50%; display: inline-block;"></span>' : ''}
+                                </div>
+                                <p style="margin: 0 0 8px 0; color: var(--text-secondary); font-size: 13px;">
+                                    ${escapeHtml(n.message)}
+                                </p>
+                                <span style="color: var(--text-muted); font-size: 12px;">
+                                    ${formatRelativeTime(n.time)}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+        
+        // Add hover effects via JavaScript instead of inline handlers
+        body.querySelectorAll('.notification-item').forEach(item => {
+            const isRead = item.classList.contains('read');
+            const defaultBg = isRead ? 'var(--bg-darker)' : 'rgba(99, 102, 241, 0.1)';
+            
+            item.addEventListener('mouseenter', () => {
+                item.style.background = 'var(--bg-lighter)';
+            });
+            
+            item.addEventListener('mouseleave', () => {
+                item.style.background = defaultBg;
+            });
+        });
+    }
+    
+    modal.classList.add('active');
+}
+
 // Update Date/Time
 function updateDateTime() {
     const now = new Date();
@@ -489,7 +626,11 @@ function init() {
     state.processing.processing = randomAmount(2, 5);
     
     // Initialize UI
-    initCharts();
+    try {
+        initCharts();
+    } catch (error) {
+        console.warn('Charts initialization failed:', error.message);
+    }
     renderTransactions();
     updateStats();
     updateProcessing();
@@ -503,27 +644,40 @@ function init() {
     // Start intervals
     setInterval(simulateProcessing, 2000);
     setInterval(updateDateTime, 1000);
-    setInterval(() => {
-        // Update chart data randomly
-        transactionsChart.data.datasets[0].data = transactionsChart.data.datasets[0].data.map(
-            v => v + randomAmount(-500, 500)
-        );
-        transactionsChart.data.datasets[1].data = transactionsChart.data.datasets[1].data.map(
-            v => v + randomAmount(-300, 300)
-        );
-        transactionsChart.update('none');
-    }, 5000);
+    if (transactionsChart) {
+        setInterval(() => {
+            // Update chart data randomly
+            transactionsChart.data.datasets[0].data = transactionsChart.data.datasets[0].data.map(
+                v => v + randomAmount(-500, 500)
+            );
+            transactionsChart.data.datasets[1].data = transactionsChart.data.datasets[1].data.map(
+                v => v + randomAmount(-300, 300)
+            );
+            transactionsChart.update('none');
+        }, 5000);
+    }
     
     // Event Listeners
     document.querySelectorAll('.close-modal').forEach(btn => {
         btn.addEventListener('click', () => {
-            document.getElementById('modalOverlay').classList.remove('active');
+            const modal = document.getElementById('modalOverlay');
+            modal.classList.remove('active');
+            // Reset modal title and footer
+            const header = modal.querySelector('.modal-header h3');
+            const footer = modal.querySelector('.modal-footer');
+            if (header) header.textContent = 'פרטי טרנזקציה';
+            if (footer) footer.style.display = '';
         });
     });
     
     document.getElementById('modalOverlay').addEventListener('click', (e) => {
         if (e.target === e.currentTarget) {
             e.currentTarget.classList.remove('active');
+            // Reset modal title and footer
+            const header = e.currentTarget.querySelector('.modal-header h3');
+            const footer = e.currentTarget.querySelector('.modal-footer');
+            if (header) header.textContent = 'פרטי טרנזקציה';
+            if (footer) footer.style.display = '';
         }
     });
     
@@ -544,35 +698,24 @@ function init() {
     });
     
     // Notification button handler
-    document.querySelector('.notification-btn').addEventListener('click', () => {
-        // Crash the entire page
-        document.body.innerHTML = `
-            <div style="
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                height: 100vh;
-                background: #0a0a0a;
-                color: #ff3333;
-                font-family: monospace;
-                text-align: center;
-                padding: 20px;
-            ">
-                <div style="font-size: 80px; margin-bottom: 20px;">💥</div>
-                <h1 style="font-size: 48px; margin-bottom: 20px;">FATAL ERROR</h1>
-                <div style="background: #1a1a1a; padding: 30px; border-radius: 10px; border: 2px solid #ff3333; max-width: 600px;">
-                    <p style="color: #ff6666; font-size: 18px; margin-bottom: 15px;">Uncaught TypeError: Cannot read properties of undefined</p>
-                    <p style="color: #888; font-size: 14px; margin-bottom: 10px;">at NotificationService.fetchAll (notifications.js:142:23)</p>
-                    <p style="color: #888; font-size: 14px; margin-bottom: 10px;">at HTMLButtonElement.&lt;anonymous&gt; (app.js:847:15)</p>
-                    <p style="color: #888; font-size: 14px; margin-bottom: 20px;">at EventTarget.dispatchEvent (native)</p>
-                    <p style="color: #ff4444; font-size: 16px;">ERROR CODE: 0x80004005</p>
-                    <p style="color: #666; font-size: 12px; margin-top: 20px;">The application has encountered a critical error and must be terminated.</p>
-                </div>
-                <p style="color: #555; margin-top: 30px; font-size: 14px;">Press F5 to restart the application</p>
-            </div>
-        `;
-        throw new Error('CRITICAL_SYSTEM_FAILURE');
+    document.querySelector('.notification-btn').addEventListener('click', async () => {
+        try {
+            // Fetch notifications safely
+            const notifications = await NotificationService.fetchAll();
+            
+            // Update badge count
+            const unreadCount = NotificationService.getUnreadCount(notifications);
+            const badge = document.querySelector('.notification-badge');
+            if (badge) {
+                badge.textContent = unreadCount;
+            }
+            
+            // Show notifications in modal
+            showNotificationsModal(notifications);
+        } catch (error) {
+            console.error('Error loading notifications:', error);
+            showToast('שגיאה בטעינת התראות', 'error');
+        }
     });
     
     document.querySelectorAll('.nav-item').forEach(item => {
