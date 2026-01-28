@@ -474,14 +474,29 @@ function editTransaction(id) {
 function showNotificationsModal(notifications) {
     const modal = document.getElementById('modalOverlay');
     const body = document.getElementById('modalBody');
+    const header = modal.querySelector('.modal-header h3');
+    const footer = modal.querySelector('.modal-footer');
+    
+    // Update modal title for notifications
+    if (header) {
+        header.textContent = 'התראות';
+    }
+    
+    // Hide footer for notifications modal
+    if (footer) {
+        footer.style.display = 'none';
+    }
     
     const formatRelativeTime = (date) => {
         const minutes = Math.floor((new Date() - date) / 60000);
         if (minutes < 1) return 'עכשיו';
+        if (minutes === 1) return 'לפני דקה אחת';
         if (minutes < 60) return `לפני ${minutes} דקות`;
         const hours = Math.floor(minutes / 60);
+        if (hours === 1) return 'לפני שעה אחת';
         if (hours < 24) return `לפני ${hours} שעות`;
         const days = Math.floor(hours / 24);
+        if (days === 1) return 'לפני יום אחד';
         return `לפני ${days} ימים`;
     };
     
@@ -495,6 +510,33 @@ function showNotificationsModal(notifications) {
         return icons[type] || 'fa-bell';
     };
     
+    const getNotificationColor = (type) => {
+        const colors = {
+            success: '#10b981',
+            error: '#ef4444',
+            warning: '#f59e0b',
+            info: '#6366f1'
+        };
+        return colors[type] || '#6366f1';
+    };
+    
+    const getNotificationBgColor = (type) => {
+        const colors = {
+            success: 'rgba(16, 185, 129, 0.2)',
+            error: 'rgba(239, 68, 68, 0.2)',
+            warning: 'rgba(245, 158, 11, 0.2)',
+            info: 'rgba(99, 102, 241, 0.2)'
+        };
+        return colors[type] || 'rgba(99, 102, 241, 0.2)';
+    };
+    
+    // Helper to safely escape HTML
+    const escapeHtml = (text) => {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    };
+    
     if (notifications.length === 0) {
         body.innerHTML = `
             <div style="text-align: center; padding: 40px;">
@@ -504,53 +546,38 @@ function showNotificationsModal(notifications) {
         `;
     } else {
         body.innerHTML = `
-            <div style="display: flex; flex-direction: column; gap: 12px; max-height: 400px; overflow-y: auto;">
+            <div style="display: flex; flex-direction: column; gap: 12px; max-height: 400px; overflow-y: auto; overflow-x: hidden;">
                 ${notifications.map(n => `
-                    <div class="notification-item ${n.read ? 'read' : 'unread'}" style="
+                    <div class="notification-item ${n.read ? 'read' : 'unread'}" data-notification-id="${escapeHtml(n.id)}" style="
                         padding: 16px;
                         background: ${n.read ? 'var(--bg-darker)' : 'rgba(99, 102, 241, 0.1)'};
                         border-radius: 8px;
-                        border-left: 3px solid ${
-                            n.type === 'success' ? '#10b981' :
-                            n.type === 'error' ? '#ef4444' :
-                            n.type === 'warning' ? '#f59e0b' : '#6366f1'
-                        };
+                        border-left: 3px solid ${getNotificationColor(n.type)};
                         cursor: pointer;
                         transition: background 0.2s;
-                    " onmouseover="this.style.background='var(--bg-lighter)'" 
-                       onmouseout="this.style.background='${n.read ? 'var(--bg-darker)' : 'rgba(99, 102, 241, 0.1)'}'">
+                    ">
                         <div style="display: flex; align-items: start; gap: 12px;">
                             <div style="
                                 width: 40px;
                                 height: 40px;
                                 border-radius: 50%;
-                                background: ${
-                                    n.type === 'success' ? 'rgba(16, 185, 129, 0.2)' :
-                                    n.type === 'error' ? 'rgba(239, 68, 68, 0.2)' :
-                                    n.type === 'warning' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(99, 102, 241, 0.2)'
-                                };
+                                background: ${getNotificationBgColor(n.type)};
                                 display: flex;
                                 align-items: center;
                                 justify-content: center;
                                 flex-shrink: 0;
                             ">
-                                <i class="fas ${getNotificationIcon(n.type)}" style="
-                                    color: ${
-                                        n.type === 'success' ? '#10b981' :
-                                        n.type === 'error' ? '#ef4444' :
-                                        n.type === 'warning' ? '#f59e0b' : '#6366f1'
-                                    };
-                                "></i>
+                                <i class="fas ${getNotificationIcon(n.type)}" style="color: ${getNotificationColor(n.type)};"></i>
                             </div>
                             <div style="flex: 1;">
                                 <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 4px;">
                                     <h4 style="margin: 0; color: var(--text-primary); font-size: 14px; font-weight: 600;">
-                                        ${n.title}
+                                        ${escapeHtml(n.title)}
                                     </h4>
                                     ${!n.read ? '<span style="width: 8px; height: 8px; background: #6366f1; border-radius: 50%; display: inline-block;"></span>' : ''}
                                 </div>
                                 <p style="margin: 0 0 8px 0; color: var(--text-secondary); font-size: 13px;">
-                                    ${n.message}
+                                    ${escapeHtml(n.message)}
                                 </p>
                                 <span style="color: var(--text-muted); font-size: 12px;">
                                     ${formatRelativeTime(n.time)}
@@ -561,6 +588,20 @@ function showNotificationsModal(notifications) {
                 `).join('')}
             </div>
         `;
+        
+        // Add hover effects via JavaScript instead of inline handlers
+        body.querySelectorAll('.notification-item').forEach(item => {
+            const isRead = item.classList.contains('read');
+            const defaultBg = isRead ? 'var(--bg-darker)' : 'rgba(99, 102, 241, 0.1)';
+            
+            item.addEventListener('mouseenter', () => {
+                item.style.background = 'var(--bg-lighter)';
+            });
+            
+            item.addEventListener('mouseleave', () => {
+                item.style.background = defaultBg;
+            });
+        });
     }
     
     modal.classList.add('active');
@@ -619,13 +660,24 @@ function init() {
     // Event Listeners
     document.querySelectorAll('.close-modal').forEach(btn => {
         btn.addEventListener('click', () => {
-            document.getElementById('modalOverlay').classList.remove('active');
+            const modal = document.getElementById('modalOverlay');
+            modal.classList.remove('active');
+            // Reset modal title and footer
+            const header = modal.querySelector('.modal-header h3');
+            const footer = modal.querySelector('.modal-footer');
+            if (header) header.textContent = 'פרטי טרנזקציה';
+            if (footer) footer.style.display = '';
         });
     });
     
     document.getElementById('modalOverlay').addEventListener('click', (e) => {
         if (e.target === e.currentTarget) {
             e.currentTarget.classList.remove('active');
+            // Reset modal title and footer
+            const header = e.currentTarget.querySelector('.modal-header h3');
+            const footer = e.currentTarget.querySelector('.modal-footer');
+            if (header) header.textContent = 'פרטי טרנזקציה';
+            if (footer) footer.style.display = '';
         }
     });
     
